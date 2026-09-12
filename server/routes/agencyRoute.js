@@ -1,9 +1,10 @@
-import express from "express"
-import { authUser } from "../middleware/authMiddleware.js"
-import { agencyReg } from "../controllers/agencyController.js"
+import express from "express";
 
-const agencyRouter = express.Router()
+import { authUser } from "../middleware/authMiddleware.js";
+import { agencyReg } from "../controllers/agencyController.js";
 
-agencyRouter.post('/', authUser, agencyReg)
+const agencyRouter = express.Router();
 
-export default agencyRouter
+agencyRouter.post("/", authUser, agencyReg);
+
+export default agencyRouter;

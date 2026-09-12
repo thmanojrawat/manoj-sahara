@@ -21,20 +21,36 @@ export const createNewProperty = async (req, res) => {
       amenities,
     } = req.body;
 
-    const agency = await Agency.findOne({ owner: req.auth.userId });
+    // Find the agency belonging to the logged-in user
+    const agency = await Agency.findOne({
+      owner: req.user._id,
+    });
 
     if (!agency) {
-      return res.json({ success: false, message: "Agency not fount" });
+      return res.json({
+        success: false,
+        message: "Agency not found",
+      });
     }
 
-    // Upload images to cloudinary
+    // Check if images were uploaded
+    if (!req.files || req.files.length === 0) {
+      return res.json({
+        success: false,
+        message: "Please upload at least one property image",
+      });
+    }
+
+    // Upload images to Cloudinary
     const uploadImages = req.files.map(async (file) => {
       const response = await cloudinary.uploader.upload(file.path);
       return response.secure_url;
     });
-    // Waiting for uploads to complete
+
+    // Wait for all uploads to complete
     const images = await Promise.all(uploadImages);
 
+    // Create property
     await Property.create({
       agency: agency._id,
       title,
@@ -57,16 +73,26 @@ export const createNewProperty = async (req, res) => {
       images,
     });
 
-    res.json({ success: true, message: "Property Created" });
+    res.json({
+      success: true,
+      message: "Property Created",
+    });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    console.log("Create Property Error:", error.message);
+
+    res.json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
 // Get all available properties [GET '/properties']
 export const getAllAvailableProperties = async (req, res) => {
   try {
-    const properties = await Property.find({ isAvailable: true }).populate({
+    const properties = await Property.find({
+      isAvailable: true,
+    }).populate({
       path: "agency",
       populate: {
         path: "owner",
@@ -74,36 +100,81 @@ export const getAllAvailableProperties = async (req, res) => {
       },
     });
 
-    res.json({ success: true, properties });
+    res.json({
+      success: true,
+      properties,
+    });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    console.log("Get Properties Error:", error.message);
+
+    res.json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
 // Get properties of the logged-in agency/owner [GET '/properties/owner']
 export const getOwnerProperties = async (req, res) => {
   try {
-    const agencyData = await Agency.findOne({ owner: req.auth.userId });
+    const agencyData = await Agency.findOne({
+      owner: req.user._id,
+    });
+
+    if (!agencyData) {
+      return res.json({
+        success: false,
+        message: "Agency not found",
+      });
+    }
+
     const properties = await Property.find({
-      agency: agencyData._id.toString(),
+      agency: agencyData._id,
     }).populate("agency");
 
-    res.json({ success: true, properties });
+    res.json({
+      success: true,
+      properties,
+    });
   } catch (error) {
-    res.json({ success: false, message: error.message });
-}
+    console.log("Get Owner Properties Error:", error.message);
+
+    res.json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
-// Toggle availability status of a property [POST '/properties/toggle-availability']
-export const togglePropertyAvailability = async (req,res)=>{
-    try {
-        const {propertyId} = req.body
-        const propertyData = await Property.findById(propertyId)
-        propertyData.isAvailable = !propertyData.isAvailable
-        await propertyData.save()
-        
-        res.json({success:true, message:"Status Updated"})
-    } catch (error) {
-        res.json({ success: false, message: error.message })
+// Toggle availability status of a property
+// [POST '/properties/toggle-availability']
+export const togglePropertyAvailability = async (req, res) => {
+  try {
+    const { propertyId } = req.body;
+
+    const propertyData = await Property.findById(propertyId);
+
+    if (!propertyData) {
+      return res.json({
+        success: false,
+        message: "Property not found",
+      });
     }
-}
+
+    propertyData.isAvailable = !propertyData.isAvailable;
+
+    await propertyData.save();
+
+    res.json({
+      success: true,
+      message: "Status Updated",
+    });
+  } catch (error) {
+    console.log("Toggle Property Error:", error.message);
+
+    res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

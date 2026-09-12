@@ -1,4 +1,0 @@
-MONGO_URI=mongodb+srv://sahara_admin:adminsahara@123@cluster0.qglafjk.mongodb.net/sahara?appName=Cluster0
-CLERK_PUBLISHABLE_KEY=pk_test_b3JnYW5pYy1ncmFja2xlLTU4MTguY2xlcmsuYWNjb3VudHMuZGV2JA
-CLERK_SECRET_KEY=sk_test_6NQI27IxPNWGibWzdpBYlWocwOrM3jNXUFQWrKJue0
-CLERK_WEBHOOK_SECRET=whsec_xAWYrFZZxXO1Cye/jAyxDucWDGcZdeDt

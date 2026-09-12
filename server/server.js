@@ -1,45 +1,66 @@
-import express from "express"
-import cors from 'cors'
-import "dotenv/config"
-import connectDB from "./config/mongodb.js"
-import { clerkMiddleware } from '@clerk/express'
-import clerkWebhooks from "./controllers/clerkWebhooks.js"
-import userRouter from "./routes/userRoute.js"
-import agencyRouter from "./routes/agencyRoute.js"
-import propertyRouter from "./routes/propertyRoute.js"
-import bookingRouter from "./routes/bookingRoute.js"
-import connectCloudinary from "./config/cloudinary.js"
-import { stripeWebhooks } from "./controllers/stripeWebhooks.js"
+import express from "express";
+import cors from "cors";
+import "dotenv/config";
 
+import connectDB from "./config/mongodb.js";
+import connectCloudinary from "./config/cloudinary.js";
 
-await connectDB() // Establish connection to the database
-await connectCloudinary() // Setup cloudinary for image storage
+import { clerkMiddleware } from "@clerk/express";
 
-const app = express() // Initialize Express Application
-app.use(cors())  // Enables Cross-Origin Resource sharing
+import clerkWebhooks from "./controllers/clerkWebhooks.js";
+import { stripeWebhooks } from "./controllers/stripeWebhooks.js";
 
-// API to listen to stripe Webhooks
-app.post('/api/stripe', express.raw({type: "application/json"}), stripeWebhooks)
+import userRouter from "./routes/userRoute.js";
+import agencyRouter from "./routes/agencyRoute.js";
+import propertyRouter from "./routes/propertyRoute.js";
+import bookingRouter from "./routes/bookingRoute.js";
 
-// Middleware Setup
-app.use(express.json()) // Enables JSON request body parsing
-app.use(clerkMiddleware())
+await connectDB();
+await connectCloudinary();
 
-// API to listen Clerk Webhooks
-app.use("/api/clerk", clerkWebhooks)
+const app = express();
 
-// Define API routes
-app.use('/api/user', userRouter)
-app.use('/api/agencies', agencyRouter)
-app.use('/api/properties', propertyRouter)
-app.use('/api/bookings', bookingRouter)
+/* CORS */
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
-// Route Endpoint to check API Status
-app.get('/', (req,res)=>{
-    res.send("API successfully connected")
-})
+/*
+  Stripe webhook
+  IMPORTANT:
+  This must come before express.json()
+*/
+app.post(
+  "/api/stripe",
+  express.raw({ type: "application/json" }),
+  stripeWebhooks
+);
 
-const port = process.env.PORT || 4000 // Define server port
+/* JSON body parser */
+app.use(express.json());
 
-// Start the server
-app.listen(port, ()=> console.log(`Server is running at http://localhost:${port}`))
+/* Clerk middleware */
+app.use(clerkMiddleware());
+
+/* Clerk webhook */
+app.use("/api/clerk", clerkWebhooks);
+
+/* API routes */
+app.use("/api/user", userRouter);
+app.use("/api/agencies", agencyRouter);
+app.use("/api/properties", propertyRouter);
+app.use("/api/bookings", bookingRouter);
+
+/* Test API */
+app.get("/", (req, res) => {
+  res.send("API successfully connected");
+});
+
+const port = process.env.PORT || 4000;
+
+app.listen(port, () => {
+  console.log(`Server is running at http://localhost:${port}`);
+});
