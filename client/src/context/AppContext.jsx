@@ -63,7 +63,6 @@ export const AppContextProvider = ({ children }) => {
 
   const value = {
     navigate,
-    getProperties,
     properties,
     setProperties,
     currency,

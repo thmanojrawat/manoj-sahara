@@ -507,11 +507,11 @@ const PropertyDetails = () => {
 
                 </div>
 
-                <div className="flex items-center divide-x divide-gray-500/30">
+                <div className="flex items-center">
 
                   <button
                     type="button"
-                    className="flex items-center justify-center gap-2 w-1/2 py-3 cursor-pointer"
+                    className="flex items-center justify-center gap-2 w-full py-3 cursor-pointer"
                   >
                     <img
                       src={assets.mail}
@@ -520,22 +520,18 @@ const PropertyDetails = () => {
                     />
                     Send Email
                   </button>
-
-                  <button
-                    type="button"
-                    className="flex items-center justify-center gap-2 w-1/2 py-3 cursor-pointer"
-                  >
-                    <img
-                      src={assets.phone}
-                      alt="phone"
-                      width={19}
-                    />
-                    Call Now
-                  </button>
-
                 </div>
 
               </div>
+              <a
+                href={`tel:${property.agency.contact}`}
+                className="mt-3 flex w-80 items-center justify-center gap-1.5 rounded-full bg-[#d99a35] px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#c88624]"
+              >
+                Call Now
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white">
+                  <img src={assets.phone} alt="" className="h-3.5 w-3.5" />
+                </span>
+              </a>
 
             </div>
 

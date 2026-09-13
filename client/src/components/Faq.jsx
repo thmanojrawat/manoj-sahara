@@ -33,7 +33,7 @@ const Faq = () => {
   ];
 
   return (
-    <section className="max-padd-container py-16 xl:py-22">
+    <section id="faqs" className="max-padd-container py-16 xl:py-22">
       {/* Container */}
       <div className="flex flex-col gap-y-12 xl:flex-row">
         {/* Image - Left Side */}

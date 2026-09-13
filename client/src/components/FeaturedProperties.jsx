@@ -49,6 +49,7 @@ const FeaturedProperties = () => {
         autoplay={{
           delay: 3500,
           disableOnInteraction: false,
+          // pauseOnMouseEnter: true,
         }}
         breakpoints={{
           600: {
@@ -65,7 +66,7 @@ const FeaturedProperties = () => {
           },
         }}
         modules={[Autoplay]}
-        className="h-[488px] md:h-[533px] xl:h-[422px] mt-5"
+        className="h-[552px] md:h-[597px] xl:h-[486px] mt-5"
       >
         {featuredProperties.slice(0, 6).map((property) => (
           <SwiperSlide key={property._id}>

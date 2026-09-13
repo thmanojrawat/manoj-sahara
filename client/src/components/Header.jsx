@@ -58,9 +58,6 @@ const Header = () => {
       } else {
         setActive(true); // always stay active on other pages
       }
-      if (window.scrollY > 10) {
-        setMenuOpened(false);
-      }
     };
 
     window.addEventListener("scroll", handleScroll);
@@ -78,7 +75,11 @@ const Header = () => {
         active ? "bg-white py-3 shadow-md" : "py-4"
       } fixed top-0 w-full left-0 right-0 z-50 transition-all duration-200`}
     >
-      <div className="max-padd-container">
+      <div
+        className={`max-padd-container transition-all duration-200 ${
+          menuOpened ? "lg:pr-80" : ""
+        }`}
+      >
         {/* Container */}
         <div className="flexBetween">
           {/* Logo */}
@@ -87,21 +88,17 @@ const Header = () => {
               <img
                 src={assets.logoImg}
                 alt="LogoImg"
-                className={`${!active && "invert"} h-11`}
+                className="invert h-11"
               />
             </Link>
           </div>
           {/* Navbar */}
           <Navbar
             setMenuOpened={setMenuOpened}
-            containerStyles={`${
-              menuOpened
-                ? "flex items-start flex-col gap-y-8 fixed top-16 right-6 p-5 bg-white shadow-md w-52 ring-1 ring-slate-900/5 rounded-xl z-50"
-                : "hidden lg:flex gap-x-5 xl:gap-x-1 medium-15 p-1"
-            } ${!menuOpened && !active ? "text-white" : ""}`}
+            containerStyles={`hidden lg:flex lg:-translate-x-12 gap-x-5 xl:gap-x-1 medium-15 p-1 ${!active ? "text-white" : ""}`}
           />
           {/* Buttons SearchBar & Profile */}
-          <div className="flex sm:flex-1 items-center sm:justify-end gap-x-4 sm:gap-x-8">
+          <div className="flex sm:flex-1 items-center sm:justify-end gap-x-4 sm:gap-x-8 xl:gap-x-4">
             <div>
               {user && (
                 <button
@@ -147,28 +144,6 @@ const Header = () => {
                 <img src={assets.search} alt="searchIcon" />
               </div>
             </div>
-            {/* Menu Toggle */}
-            <>
-              {menuOpened ? (
-                <img
-                  src={assets.close}
-                  alt="closeMenuIcon"
-                  onClick={toggleMenu}
-                  className={`${
-                    !active && "invert"
-                  } lg:hidden cursor-pointer text-xl`}
-                />
-              ) : (
-                <img
-                  src={assets.menu}
-                  alt="openMenuIcon"
-                  onClick={toggleMenu}
-                  className={`${
-                    !active && "invert"
-                  } lg:hidden cursor-pointer text-xl`}
-                />
-              )}
-            </>
             {/* User Profile */}
             <div className="group relative top-1">
               <div>
@@ -202,9 +177,50 @@ const Header = () => {
                 )}
               </div>
             </div>
+            {/* Menu Toggle */}
+            <button
+              type="button"
+              onClick={() => setMenuOpened(true)}
+              aria-label="Open menu"
+              aria-expanded={menuOpened}
+              className={`${!active && "invert"} shrink-0 cursor-pointer transition-transform duration-200 ${
+                menuOpened ? "lg:translate-x-80" : ""
+              }`}
+            >
+              <img src={assets.menu} alt="" className="h-6 w-6" />
+            </button>
           </div>
         </div>
       </div>
+      {menuOpened && (
+        <aside
+          className="fixed inset-y-0 right-0 z-[60] h-screen w-[min(20rem,88vw)] overflow-y-auto bg-white p-6 shadow-2xl"
+          aria-label="Site menu"
+        >
+          <button
+            type="button"
+            onClick={toggleMenu}
+            aria-label="Close menu"
+            className="absolute top-6 left-6 cursor-pointer"
+          >
+            <img src={assets.close} alt="" className="h-6 w-6" />
+          </button>
+          <Navbar
+            setMenuOpened={setMenuOpened}
+            containerStyles="flex flex-col items-start gap-y-6 pt-20 text-lg font-bold"
+            extraLinks={[
+              { path: "/contact", title: "Loan Assistance", drawerSelection: true },
+              { path: "/contact", title: "Events", drawerSelection: true },
+              { path: "/contact", title: "FAQs", drawerSelection: true },
+              {
+                path: "/contact",
+                title: "Feedbacks & Grievances",
+                drawerSelection: true,
+              },
+            ]}
+          />
+        </aside>
+      )}
     </header>
   );
 };
