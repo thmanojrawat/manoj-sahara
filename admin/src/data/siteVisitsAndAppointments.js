@@ -1,0 +1,127 @@
+export const mockSiteVisits = [
+  {
+    id: 'sv-101',
+    leadId: 'lead-101',
+    leadName: 'Soumyajit Chatterjee',
+    clientId: null,
+    clientName: null,
+    propertyId: 'prop-101',
+    propertyTitle: 'Solitaire Sky Residence 3 BHK',
+    agentId: 'brk-1',
+    agentName: 'Arijit Sen',
+    date: '14/09/2026',
+    time: '11:30 AM',
+    location: 'Sahara Solitaire Heights, New Town Action Area II',
+    status: 'Scheduled', // Scheduled, Confirmed, Completed, Rescheduled, Cancelled, No Show
+    notes: 'Client wants to verify morning natural light in master bedroom and parking bay dimensions.'
+  },
+  {
+    id: 'sv-102',
+    leadId: 'lead-102',
+    leadName: 'Anirban Sengupta',
+    clientId: null,
+    clientName: null,
+    propertyId: 'prop-102',
+    propertyTitle: 'Corporate Executive Suite Grade A',
+    agentId: 'brk-4',
+    agentName: 'Tanushree Paul',
+    date: '13/09/2026',
+    time: '04:00 PM',
+    location: 'Tower 1, Sahara Tech Vista, Sector V Salt Lake',
+    status: 'Confirmed',
+    notes: 'Commercial technical audit: checking ducting points, UPS room space, and optical fiber risers.'
+  },
+  {
+    id: 'sv-103',
+    leadId: 'lead-103',
+    leadName: 'Indrani Dasgupta',
+    clientId: null,
+    clientName: null,
+    propertyId: 'prop-103',
+    propertyTitle: 'Regal Heritage Duplex Mansion',
+    agentId: 'brk-2',
+    agentName: 'Sohini Ghosh',
+    date: '08/09/2026',
+    time: '03:00 PM',
+    location: 'Sahara Royal Sovereign, Ballygunge Circular Rd',
+    status: 'Completed',
+    notes: 'Very positive reception. Impressed by double-height ceiling and manicured lawn.'
+  },
+  {
+    id: 'sv-104',
+    leadId: 'lead-104',
+    leadName: 'Pratik Mukherjee',
+    clientId: null,
+    clientName: null,
+    propertyId: 'prop-104',
+    propertyTitle: 'Emerald Garden 2 BHK Garden Facing',
+    agentId: 'brk-3',
+    agentName: 'Vikramjit Das',
+    date: '06/09/2026',
+    time: '12:00 PM',
+    location: 'Sahara Emerald Grand, Rajarhat Main Rd',
+    status: 'Rescheduled',
+    notes: 'Client requested postponement due to unexpected office travel to Bangalore.'
+  },
+  {
+    id: 'sv-105',
+    leadId: null,
+    leadName: null,
+    clientId: 'cli-1',
+    clientName: 'Rajesh Kumar Agarwal',
+    propertyId: 'prop-101',
+    propertyTitle: 'Solitaire Sky Residence 3 BHK',
+    agentId: 'brk-1',
+    agentName: 'Arijit Sen',
+    date: '02/09/2026',
+    time: '11:00 AM',
+    location: 'Sahara Solitaire Heights, New Town',
+    status: 'Completed',
+    notes: 'Pre-booking site inspection conducted. Client approved floor level 4 layout.'
+  }
+];
+
+export const mockAppointments = [
+  {
+    id: 'apt-1',
+    title: 'Commercial Lease Term Sheet Negotiation',
+    clientName: 'Anirban Sengupta',
+    phone: '+91 98315 99882',
+    agentName: 'Tanushree Paul',
+    date: '13/09/2026',
+    time: '02:30 PM',
+    duration: '45 mins',
+    location: 'Sahara Corporate Lounge, Sector V Salt Lake',
+    type: 'In-Person',
+    status: 'Confirmed',
+    agenda: 'Review lock-in clause, rent escalation percentage, and fit-out rent-free period.'
+  },
+  {
+    id: 'apt-2',
+    title: 'Agreement Signing & Allotment Handover',
+    clientName: 'Rajesh Kumar Agarwal',
+    phone: '+91 98300 11223',
+    agentName: 'Arijit Sen',
+    date: '15/09/2026',
+    time: '04:00 PM',
+    duration: '60 mins',
+    location: 'Sahara Sales Headquarters, New Town',
+    type: 'In-Person',
+    status: 'Scheduled',
+    agenda: 'Execute registered Agreement for Sale and issue initial receipt booklet.'
+  },
+  {
+    id: 'apt-3',
+    title: 'Virtual Portfolio Consultation',
+    clientName: 'Indrani Dasgupta',
+    phone: '+91 94331 45678',
+    agentName: 'Sohini Ghosh',
+    date: '16/09/2026',
+    time: '06:00 PM',
+    duration: '30 mins',
+    location: 'Google Meet / Video Call',
+    type: 'Virtual',
+    status: 'Scheduled',
+    agenda: 'Review legal title due-diligence report prepared by advocate.'
+  }
+];

@@ -1,0 +1,62 @@
+export const mockVendors = [
+  {
+    id: 'ven-1',
+    name: 'Debashis Roychowdhury',
+    company: 'Roychowdhury Estates Ltd',
+    phone: '+91 98301 22891',
+    email: 'debashis.roy@roychowdhuryestates.in',
+    location: 'Ballygunge, Kolkata',
+    propertyCount: 6,
+    propertyValue: 185000000,
+    agreementStatus: 'Active',
+    relationshipManager: 'Arijit Sen',
+    lastActivity: '12/09/2026',
+    status: 'Verified',
+    notes: 'Long-standing high-net-worth owner with premium assets across South Kolkata and Salt Lake.'
+  },
+  {
+    id: 'ven-2',
+    name: 'Priyanka Mukherjee',
+    company: 'Skyline Land Holdings',
+    phone: '+91 98310 44512',
+    email: 'priyanka@skylineland.com',
+    location: 'New Town Action Area I, Kolkata',
+    propertyCount: 4,
+    propertyValue: 92000000,
+    agreementStatus: 'Active',
+    relationshipManager: 'Sohini Ghosh',
+    lastActivity: '10/09/2026',
+    status: 'Verified',
+    notes: 'Owns 3 commercial units in Sector V and a high-end duplex in New Town.'
+  },
+  {
+    id: 'ven-3',
+    name: 'Subhashish Bhattacharya',
+    company: 'Bhattacharya Heritage Properties',
+    phone: '+91 94330 88124',
+    email: 'subhashish@bhattacharyagroup.org',
+    location: 'Alipore, Kolkata',
+    propertyCount: 2,
+    propertyValue: 145000000,
+    agreementStatus: 'Pending Renewal',
+    relationshipManager: 'Arijit Sen',
+    lastActivity: '04/09/2026',
+    status: 'Verified',
+    notes: 'Heritage bungalow property in Alipore looking for high-end boutique redevelopment or lease.'
+  },
+  {
+    id: 'ven-4',
+    name: 'Kallol Banerjee',
+    company: 'Individual Landlord',
+    phone: '+91 98365 77190',
+    email: 'kallol.banerjee@gmail.com',
+    location: 'Salt Lake Sector II, Kolkata',
+    propertyCount: 3,
+    propertyValue: 48000000,
+    agreementStatus: 'Active',
+    relationshipManager: 'Vikramjit Das',
+    lastActivity: '08/09/2026',
+    status: 'Active',
+    notes: 'Looking to rent out top floor executive residences to IT corporates.'
+  }
+];
