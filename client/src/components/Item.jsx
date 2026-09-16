@@ -13,31 +13,42 @@ const Item = ({property}) => {
       className='block'>
         {/* Image */}
         <div className='relative'>
-          <img src={property.images[0]} alt={property.title} className='h-[13rem] w-full aspect-square object-cover rounded-t-xl'/>
+          <img
+            src={property.images?.[0] || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80'}
+            alt={property.title}
+            className='h-[13rem] w-full aspect-square object-cover rounded-t-xl'
+          />
         </div>
         {/* Info */}
         <div className="p-3">
           <div className="flexBetween">
-              <h5 className="bold-16 my-1">{property.propertyType}</h5>
-              <div className='bold-15 text-secondary'>{currency}{property.price.sale} | {currency}{property.price.rent}.00 <span className='text-xs'>/night</span></div>
+              <h5 className="bold-16 my-1">{property.propertyType || "Apartment"}</h5>
+              <div className='bold-15 text-secondary'>
+                {currency}{Number(property.price?.sale || property.price || 0).toLocaleString()}
+                {property.price?.rent && (
+                  <span className='text-xs font-normal text-slate-500 ml-1'>
+                    | {currency}{Number(property.price.rent).toLocaleString()}/mo
+                  </span>
+                )}
+              </div>
           </div>
           <h4 className='h4 line-clamp-1'>{property.title}</h4>
           <div className="flexCenter gap-4 py-2">
               <p className='flexCenter gap-x-2 border-r border-slate-900/50 pr-4 font-[500]'>
                   <img src={assets.bed} alt="facilitiesIcon" width={21}/>
-                  {property.facilities.bedrooms}
+                  {property.facilities?.bedrooms ?? 3}
               </p>
               <p className='flexCenter gap-x-2 border-r border-slate-900/50 pr-4 font-[500]'>
                   <img src={assets.bath} alt="facilitiesIcon" width={21}/>
-                  {property.facilities.bathrooms}
+                  {property.facilities?.bathrooms ?? 2}
               </p>
               <p className='flexCenter gap-x-2 border-r border-slate-900/50 pr-4 font-[500]'>
                   <img src={assets.car} alt="facilitiesIcon" width={21}/>
-                  {property.facilities.garages}
+                  {property.facilities?.garages ?? 1}
               </p>
               <p className='flexCenter gap-x-2 pr-4 font-[500]'>
                   <img src={assets.ruler} alt="facilitiesIcon" width={21}/>
-                  {property.area}
+                  {property.area || 1200}
               </p>
           </div>
           <p className="pt-2 mb-4 line-clamp-2">{property.description}</p>

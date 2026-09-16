@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Tailwind v4: enable class-based dark mode (.dark on <html>) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -9,6 +12,17 @@
   body {
     font-family: var(--font-sans);
     letter-spacing: -0.01em;
+  }
+
+  /* Ensure the html/body surface responds to the .dark class immediately */
+  html, body {
+    background-color: #f8fafc; /* slate-50 — light default */
+    color: #0f172a;            /* slate-900 */
+  }
+
+  html.dark, html.dark body {
+    background-color: #020617; /* slate-950 — dark default */
+    color: #f1f5f9;            /* slate-100 */
   }
 }
 

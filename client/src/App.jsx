@@ -8,7 +8,8 @@ import Blog from './pages/Blog'
 import Contact from './pages/Contact'
 import PropertyDetails from './pages/PropertyDetails'
 import MyBookings from './pages/MyBookings'
-import AgencyReg from './components/AgencyReg'
+import FaqPage from './pages/FaqPage'
+import FeedbackPage from './pages/FeedbackPage'
 import { useAppContext } from './context/AppContext'
 import Sidebar from './components/owner/Sidebar'
 import Dashboard from './pages/owner/Dashboard'
@@ -20,12 +21,10 @@ import Processing from './pages/Processing'
 const App = () => {
   const location = useLocation()
   const isOwnerPath = location.pathname.includes('owner')
-  const {showAgencyReg} = useAppContext()
 
   return (
     <main>
       {!isOwnerPath && <Header />}
-      {showAgencyReg && <AgencyReg />}
       <Toaster position='bottom-right' />
       <Routes>
         <Route path='/' element={<Home />}/>
@@ -34,6 +33,8 @@ const App = () => {
         <Route path='/blog' element={<Blog />}/>
         <Route path='/contact' element={<Contact />}/>
         <Route path='/my-bookings' element={<MyBookings />}/>
+        <Route path='/faq' element={<FaqPage />}/>
+        <Route path='/feedback' element={<FeedbackPage />}/>
         <Route path='/processing/:nextUrl' element={<Processing />}/>
         <Route path='/owner' element={<Sidebar />}>
            <Route index element={<Dashboard />}/>
@@ -46,4 +47,4 @@ const App = () => {
   )
 }
 
-export default App
+export default App

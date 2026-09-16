@@ -1,7 +1,7 @@
 import { createCrudService } from './baseService.js';
 import { getEntityList, setEntityList } from '../utils/storage.js';
 
-const base = createCrudService('bookings', '/bookings');
+const base = createCrudService('bookings', '/crm/bookings');
 
 export const bookingService = {
   ...base,

@@ -6,7 +6,7 @@ export function createCrudService(entityKey, endpoint) {
     async getAll() {
       if (!USE_MOCK) {
         const response = await apiClient.get(endpoint);
-        return response.data;
+        return response.data?.data !== undefined ? response.data.data : response.data;
       }
       return getEntityList(entityKey);
     },
@@ -14,7 +14,7 @@ export function createCrudService(entityKey, endpoint) {
     async getById(id) {
       if (!USE_MOCK) {
         const response = await apiClient.get(`${endpoint}/${id}`);
-        return response.data;
+        return response.data?.data !== undefined ? response.data.data : response.data;
       }
       const list = getEntityList(entityKey);
       return list.find(item => item.id === id) || null;
@@ -23,7 +23,7 @@ export function createCrudService(entityKey, endpoint) {
     async create(data) {
       if (!USE_MOCK) {
         const response = await apiClient.post(endpoint, data);
-        return response.data;
+        return response.data?.data !== undefined ? response.data.data : response.data;
       }
       const list = getEntityList(entityKey);
       const newItem = {
@@ -39,7 +39,7 @@ export function createCrudService(entityKey, endpoint) {
     async update(id, data) {
       if (!USE_MOCK) {
         const response = await apiClient.put(`${endpoint}/${id}`, data);
-        return response.data;
+        return response.data?.data !== undefined ? response.data.data : response.data;
       }
       const list = getEntityList(entityKey);
       let updatedItem = null;

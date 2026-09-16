@@ -1,9 +1,10 @@
 import { createCrudService } from './baseService.js';
 
-const base = createCrudService('vendors', '/vendors');
+// Endpoint: /api/crm/vendors  (apiClient baseURL is already set to VITE_BACKEND_URL = http://localhost:4000/api)
+const base = createCrudService('vendors', '/crm/vendors');
 
 export const vendorService = {
-  ...base
+  ...base,
 };
 
 export default vendorService;

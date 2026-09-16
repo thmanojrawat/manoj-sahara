@@ -112,11 +112,17 @@ export function Properties() {
   // Save Add
   const handleSaveAdd = async (e) => {
     e.preventDefault();
-    const owner = vendors.find(v => v.id === formData.ownerId);
-    const broker = brokers.find(b => b.id === formData.brokerId);
+    const resolvedOwnerId = formData.ownerId || vendors[0]?.id;
+    const resolvedBrokerId = formData.brokerId || brokers[0]?.id;
+    const owner = vendors.find(v => v.id === resolvedOwnerId);
+    const broker = brokers.find(b => b.id === resolvedBrokerId);
 
     await addProperty({
       ...formData,
+      ownerId: resolvedOwnerId,
+      vendor: resolvedOwnerId,
+      brokerId: resolvedBrokerId,
+      broker: resolvedBrokerId,
       price: Number(formData.price) || 0,
       areaSqFt: Number(formData.areaSqFt) || 0,
       bedrooms: Number(formData.bedrooms) || 0,
@@ -143,11 +149,17 @@ export function Properties() {
     e.preventDefault();
     if (!selectedProperty) return;
 
-    const owner = vendors.find(v => v.id === formData.ownerId);
-    const broker = brokers.find(b => b.id === formData.brokerId);
+    const resolvedOwnerId = formData.ownerId || selectedProperty.ownerId || vendors[0]?.id;
+    const resolvedBrokerId = formData.brokerId || selectedProperty.brokerId || brokers[0]?.id;
+    const owner = vendors.find(v => v.id === resolvedOwnerId);
+    const broker = brokers.find(b => b.id === resolvedBrokerId);
 
     await updateProperty(selectedProperty.id, {
       ...formData,
+      ownerId: resolvedOwnerId,
+      vendor: resolvedOwnerId,
+      brokerId: resolvedBrokerId,
+      broker: resolvedBrokerId,
       price: Number(formData.price) || 0,
       areaSqFt: Number(formData.areaSqFt) || 0,
       bedrooms: Number(formData.bedrooms) || 0,

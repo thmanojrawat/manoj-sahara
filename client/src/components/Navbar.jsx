@@ -5,7 +5,7 @@ const Navbar = ({ setMenuOpened, containerStyles, extraLinks = [] }) => {
   const location = useLocation();
   const navLinks = [
     { path: "/", title: "Home" },
-    { path: "/listing", title: "Discover Stays" },
+    { path: "/listing", title: "Properties" },
     { path: "/blog", title: "About Us" },
     { path: "/contact", title: "Contact Us" },
   ];

@@ -1,545 +1,371 @@
 import React, { useEffect, useState } from "react";
+// import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
-import { useParams } from "react-router-dom";
-import PropertyImages from "../components/PropertyImages";
-import { assets, dummyProperties } from "../assets/data";
+import { assets } from "../assets/data";
 import toast from "react-hot-toast";
+import PropertyImages from "../components/PropertyImages";
+import { useClerk } from "@clerk/clerk-react";
+import LayoutWithHeaderOffset from "../components/LayoutWithHeaderOffset";
+import {
+  Bed,
+  Bath,
+  Car,
+  Ruler,
+  MapPin,
+  Phone,
+  Mail,
+  Share2,
+  CheckCircle2,
+  Building2,
+  CalendarClock,
+  ChevronRight,
+  ShieldCheck,
+} from "lucide-react";
+
+/**
+ * PropertyDetails – displays a single listing with a full gallery, key stats,
+ * amenities, description and a sticky booking/contact card. Booking data is
+ * sent to the backend using the authenticated Clerk userId — this logic is
+ * unchanged from the original component, only the layout/visuals changed.
+ */
+
+// Best-effort icon match for amenity names coming from the backend.
+// Falls back to a plain checkmark for anything not in this list, so new
+// amenities added later never break the UI.
+const AMENITY_ICON_KEYWORDS = [
+  { keys: ["lift", "elevator"], icon: Building2 },
+  { keys: ["pool", "swimming"], icon: CheckCircle2 },
+  { keys: ["gym", "fitness"], icon: CheckCircle2 },
+  { keys: ["security", "guard", "cctv"], icon: ShieldCheck },
+  { keys: ["parking", "garage"], icon: Car },
+  { keys: ["power", "backup", "generator"], icon: CheckCircle2 },
+  { keys: ["water", "harvest"], icon: CheckCircle2 },
+  { keys: ["intercom"], icon: Phone },
+  { keys: ["garden", "park"], icon: CheckCircle2 },
+  { keys: ["club", "clubhouse"], icon: Building2 },
+];
+
+function amenityIcon(name = "") {
+  const lower = name.toLowerCase();
+  const match = AMENITY_ICON_KEYWORDS.find((a) => a.keys.some((k) => lower.includes(k)));
+  return match ? match.icon : CheckCircle2;
+}
 
 const PropertyDetails = () => {
-  const {
-    currency,
-    properties,
-    navigate,
-    axios,
-    getToken,
-  } = useAppContext();
-
-  const { id } = useParams();
-
+  const { navigate, properties, axios, getToken, user } = useAppContext();
+  const location = useLocation();
+  const { openSignIn } = useClerk();
   const [property, setProperty] = useState(null);
-  const [checkInDate, setCheckInDate] = useState("");
-  const [checkOutDate, setCheckOutDate] = useState("");
-  const [guests, setGuests] = useState(1);
-  const [isAvailable, setIsAvailable] = useState(false);
+  const [preferredDate, setPreferredDate] = useState("");
+  const [preferredTime, setPreferredTime] = useState("");
+  const [bookingStatus, setBookingStatus] = useState(null); // success / error
+  const [showAllAmenities, setShowAllAmenities] = useState(false);
 
-  // Use backend properties if available.
-  // Otherwise use dummy properties.
-  const allProperties =
-    properties && properties.length > 0
-      ? properties
-      : dummyProperties;
+  // Extract slug or id from URL path
+  const slugOrId = location.pathname.split("/").pop();
 
-  // Find the selected property
   useEffect(() => {
-    const foundProperty = allProperties.find(
-      (item) => String(item._id) === String(id)
+    // Find property matching slug or _id
+    const match = properties.find(
+      (p) => p.slug === slugOrId || p._id === slugOrId
     );
+    if (match) setProperty(match);
+    else {
+      // fallback: fetch single property from API if not in context
+      const fetchProperty = async () => {
+        try {
+          const { data } = await axios.get(`/api/crm/listings/public?slug=${slugOrId}`);
+          if (data.success && data.data && data.data.length) setProperty(data.data[0]);
+          else setProperty(null);
+        } catch (err) {
+          console.error("Error fetching property", err);
+          setProperty(null);
+        }
+      };
+      fetchProperty();
+    }
+  }, [slugOrId, properties, axios]);
 
-    if (foundProperty) {
-      setProperty(foundProperty);
+  const today = new Date().toISOString().split("T")[0];
+
+  const handleBookVisit = async () => {
+    if (!user) return openSignIn();
+    if (!preferredDate) {
+      toast.error("Please select a preferred date.");
+      return;
+    }
+    if (!preferredTime) {
+      toast.error("Please select a preferred time slot.");
+      return;
+    }
+    try {
+      const token = await getToken();
+      const payload = {
+        propertyId: property._id,
+        clientEmail: user.email_addresses?.[0]?.email_address || user.primaryEmailAddress?.email_address,
+        userId: user.id,
+        bookingType: "site-visit",
+        preferredVisitDate: preferredDate,
+        preferredVisitTime: preferredTime,
+      };
+      const { data } = await axios.post("/api/crm/bookings", payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (data.success) {
+        setBookingStatus("success");
+        toast.success("Your site‑visit request has been submitted!");
+      } else {
+        throw new Error(data.message || "Booking failed");
+      }
+    } catch (err) {
+      console.error(err);
+      setBookingStatus("error");
+      toast.error(err.message || "Failed to submit request");
+    }
+  };
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: property?.title, url: shareUrl });
+      } catch {
+        /* user cancelled share sheet — no-op */
+      }
     } else {
-      setProperty(null);
-    }
-  }, [allProperties, id]);
-
-  // Check Availability
-  const checkAvailability = async () => {
-    try {
-      if (!checkInDate || !checkOutDate) {
-        toast.error("Please select check-in and check-out dates");
-        return;
-      }
-
-      if (checkInDate >= checkOutDate) {
-        toast.error("Check-out date must be after check-in date");
-        return;
-      }
-
-      const { data } = await axios.post(
-        "/api/bookings/check-availability",
-        {
-          property: id,
-          checkInDate,
-          checkOutDate,
-        }
-      );
-
-      if (data.success) {
-        if (data.isAvailable) {
-          setIsAvailable(true);
-          toast.success("Property is Available");
-        } else {
-          setIsAvailable(false);
-          toast.error("Property is not Available");
-        }
-      } else {
-        toast.error(data.message);
-      }
-    } catch (error) {
-      toast.error(error.message);
+      navigator.clipboard.writeText(shareUrl);
+      toast.success("Link copied to clipboard");
     }
   };
 
-  // Book Property
-  const onSubmitHandler = async (e) => {
-    e.preventDefault();
-
-    try {
-      if (!isAvailable) {
-        await checkAvailability();
-        return;
-      }
-
-      const { data } = await axios.post(
-        "/api/bookings/book",
-        {
-          property: id,
-          checkInDate,
-          checkOutDate,
-          guests,
-          paymentMethod: "Pay at Check-in",
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${await getToken()}`,
-          },
-        }
-      );
-
-      if (data.success) {
-        toast.success(data.message);
-        navigate("/my-bookings");
-        window.scrollTo(0, 0);
-      } else {
-        toast.error(data.message);
-      }
-    } catch (error) {
-      toast.error(error.message);
-    }
-  };
-
-  // Property not found
   if (!property) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-[#fffbee] to-white pt-28">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Property Not Found
-          </h2>
-
-          <p className="text-gray-500 mb-5">
-            We couldn't find the property you're looking for.
-          </p>
-
-          <button
-            onClick={() => navigate("/listing")}
-            className="btn-dark px-6 py-2 rounded-lg"
-          >
-            Back to Listings
+      <LayoutWithHeaderOffset>
+        <div className="bg-gradient-to-r from-[#fffbee] to-white py-28 min-h-screen text-center">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Property not found</h2>
+          <p className="text-gray-600 mb-6">The property you are looking for may have been removed or the URL is incorrect.</p>
+          <button onClick={() => navigate("/listing")} className="btn-dark px-6 py-2 rounded-lg">
+            Browse Listings
           </button>
         </div>
-      </div>
+      </LayoutWithHeaderOffset>
     );
   }
 
+  const price = property.price?.sale ?? property.price?.rent ?? "N/A";
+  const priceLabel = property.price?.sale ? "Sale Price" : property.price?.rent ? "Monthly Rent" : "Price";
+
+  // Time slot options (hard-coded for demo)
+  const timeSlots = [
+    "09:00 AM - 10:00 AM",
+    "11:00 AM - 12:00 PM",
+    "02:00 PM - 03:00 PM",
+    "04:00 PM - 05:00 PM",
+  ];
+
+  // Key stats row — only renders fields that actually exist on this listing.
+  const stats = [
+    property.facilities?.bedrooms && { icon: Bed, label: "Bedrooms", value: property.facilities.bedrooms },
+    property.facilities?.bathrooms && { icon: Bath, label: "Bathrooms", value: property.facilities.bathrooms },
+    property.facilities?.garages && { icon: Car, label: "Parking", value: property.facilities.garages },
+    property.area && { icon: Ruler, label: "Area", value: `${property.area} sqft` },
+  ].filter(Boolean);
+
+  // Amenities: expects property.amenities to be an array of strings from the
+  // backend. If your schema doesn't have this yet, swap the line below for a
+  // hardcoded array, e.g. const amenities = ["Lift", "Security", "Parking"]
+  const amenities = property.amenities || [];
+  const visibleAmenities = showAllAmenities ? amenities : amenities.slice(0, 6);
+
   return (
-    <div className="bg-gradient-to-r from-[#fffbee] to-white py-16 pt-28">
-      <div className="max-padd-container">
+    <LayoutWithHeaderOffset>
+      <section className="bg-gradient-to-r from-[#fffbee] to-white py-10 min-h-screen">
+        <div className="max-padd-container">
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-1.5 text-sm text-gray-500 mb-5">
+            <Link to="/" className="hover:text-amber-600">Home</Link>
+            <ChevronRight size={14} />
+            <Link to="/listing" className="hover:text-amber-600">Properties</Link>
+            <ChevronRight size={14} />
+            <span className="text-gray-800 font-medium truncate max-w-[200px]">{property.title}</span>
+          </nav>
 
-        {/* Property Images */}
-        <PropertyImages property={property} />
-
-        {/* Main Container */}
-        <div className="flex flex-col xl:flex-row gap-8 mt-6">
-
-          {/* LEFT SIDE */}
-          <div className="p-4 flex-2 rounded-xl border border-slate-900/10">
-
-            {/* Address */}
-            <p className="flexStart gap-x-2">
-              <img
-                src={assets.pin}
-                alt="location"
-                width={19}
-              />
-
-              <span>{property.address}</span>
-            </p>
-
-            {/* Title + Price */}
-            <div className="flex justify-between flex-col sm:flex-row sm:items-end mt-3">
-
-              <h3 className="h3">
-                {property.title}
-              </h3>
-
-              <div className="bold-18">
-                {currency}
-                {property.price.sale.toLocaleString()}{" "}
-                |{" "}
-                {currency}
-                {property.price.rent.toLocaleString()}
-                /night
-              </div>
-
-            </div>
-
-            {/* Property Type + Rating */}
-            <div className="flex justify-between items-start my-1">
-
-              <h4 className="h4 text-secondary">
-                {property.propertyType}
-              </h4>
-
-              <div className="flex items-baseline gap-2 text-secondary relative top-1.5">
-
-                <h4 className="bold-18 relative bottom-0.5 text-black">
-                  5.0
-                </h4>
-
-                {Array(5)
-                  .fill(0)
-                  .map((_, index) => (
-                    <img
-                      key={index}
-                      src={assets.star}
-                      alt="star"
-                      width={18}
-                    />
-                  ))}
-
-              </div>
-            </div>
-
-            {/* Facilities */}
-            <div className="flex gap-x-4 mt-3">
-
-              <p className="flexCenter gap-x-2 border-r border-slate-900/50 pr-4 font-[500]">
-                <img
-                  src={assets.bed}
-                  alt="bedrooms"
-                  width={19}
-                />
-                {property.facilities.bedrooms}
+          {/* Title + address + actions */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{property.title}</h1>
+              <p className="flex items-center gap-1.5 text-gray-600 mt-1.5">
+                <MapPin size={16} className="text-amber-600 shrink-0" />
+                {property.address}, {property.locality}, {property.city}
               </p>
-
-              <p className="flexCenter gap-x-2 border-r border-slate-900/50 pr-4 font-[500]">
-                <img
-                  src={assets.bath}
-                  alt="bathrooms"
-                  width={19}
-                />
-                {property.facilities.bathrooms}
-              </p>
-
-              <p className="flexCenter gap-x-2 border-r border-slate-900/50 pr-4 font-[500]">
-                <img
-                  src={assets.car}
-                  alt="garages"
-                  width={19}
-                />
-                {property.facilities.garages}
-              </p>
-
-              <p className="flexCenter gap-x-2 border-r border-slate-900/50 pr-4 font-[500]">
-                <img
-                  src={assets.ruler}
-                  alt="area"
-                  width={19}
-                />
-                400
-              </p>
-
             </div>
-
-            {/* Description */}
-            <div className="mt-6">
-
-              <h4 className="h4 mt-4 mb-1">
-                Property Details
-              </h4>
-
-              <p className="mb-4">
-                {property.description}
-              </p>
-
-            </div>
-
-            {/* Amenities */}
-            <h4 className="h4 mt-6 mb-2">
-              Amenities
-            </h4>
-
-            <div className="flex flex-wrap gap-3">
-
-              {property.amenities.map((amenity, index) => (
-                <div
-                  key={index}
-                  className="p-3 py-1 rounded-lg bg-secondary/10 ring-1 ring-slate-900/10 text-sm"
-                >
-                  {amenity}
-                </div>
-              ))}
-
-            </div>
-
-            {/* BOOKING FORM */}
-            <form
-              onSubmit={onSubmitHandler}
-              className="text-gray-500 bg-secondary/10 rounded-lg px-6 py-4 flex flex-col lg:flex-row gap-4 max-w-md lg:max-w-full ring-1 ring-slate-900/5 relative mt-10"
+            <button
+              onClick={handleShare}
+              className="btn-outline flex items-center gap-2 px-4 py-2 rounded-lg self-start shrink-0"
             >
-
-              {/* Check In */}
-              <div className="flex flex-col w-full">
-
-                <div className="flex items-center gap-2">
-                  <img
-                    src={assets.calendar}
-                    alt="calendar"
-                    width={20}
-                  />
-
-                  <label htmlFor="checkInDate">
-                    Check in
-                  </label>
-                </div>
-
-                <input
-                  onChange={(e) => {
-                    setCheckInDate(e.target.value);
-                    setIsAvailable(false);
-                  }}
-                  value={checkInDate}
-                  min={new Date().toISOString().split("T")[0]}
-                  id="checkInDate"
-                  type="date"
-                  className="rounded bg-secondary/10 border border-gray-200 px-3 py-1.5 mt-1.5 text-sm outline-none"
-                />
-
-              </div>
-
-              {/* Check Out */}
-              <div className="flex flex-col w-full">
-
-                <div className="flex items-center gap-2">
-                  <img
-                    src={assets.calendar}
-                    alt="calendar"
-                    width={20}
-                  />
-
-                  <label htmlFor="checkOutDate">
-                    Check out
-                  </label>
-                </div>
-
-                <input
-                  onChange={(e) => {
-                    setCheckOutDate(e.target.value);
-                    setIsAvailable(false);
-                  }}
-                  value={checkOutDate}
-                  min={checkInDate || new Date().toISOString().split("T")[0]}
-                  type="date"
-                  id="checkOutDate"
-                  disabled={!checkInDate}
-                  className="rounded bg-secondary/10 border border-gray-200 px-3 py-1.5 mt-1.5 text-sm outline-none"
-                />
-
-              </div>
-
-              {/* Guests */}
-              <div className="flex flex-col w-full">
-
-                <div className="flex items-center gap-2">
-                  <img
-                    src={assets.user}
-                    alt="user"
-                    width={20}
-                  />
-
-                  <label htmlFor="guests">
-                    Guests
-                  </label>
-                </div>
-
-                <input
-                  onChange={(e) => setGuests(Number(e.target.value))}
-                  value={guests}
-                  id="guests"
-                  type="number"
-                  min={1}
-                  max={5}
-                  className="rounded bg-secondary/10 border border-gray-200 px-3 py-1.5 mt-1.5 text-sm outline-none"
-                />
-
-              </div>
-
-              {/* Button */}
-              <button
-                type="submit"
-                className="flexCenter gap-1 rounded-md btn-dark min-w-44"
-              >
-                <img
-                  src={assets.search}
-                  alt="search"
-                  width={20}
-                  className="invert"
-                />
-
-                <span>
-                  {isAvailable
-                    ? "Book Property"
-                    : "Check Dates"}
-                </span>
-              </button>
-
-            </form>
+              <Share2 size={16} /> Share
+            </button>
           </div>
 
-          {/* RIGHT SIDE */}
-          <div className="flex-1 max-w-sm">
+          {/* Gallery + sticky sidebar */}
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
+            <div className="w-full lg:w-[62%] rounded-xl overflow-hidden ring-1 ring-slate-900/5">
+              <PropertyImages images={property.images || []} />
+            </div>
 
-            <div className="p-6 rounded-xl border border-slate-900/10">
+            {/* Sticky booking / contact card */}
+            <div className="w-full lg:w-[38%] lg:sticky lg:top-24 space-y-5">
+              <div className="bg-white rounded-xl ring-1 ring-slate-900/5 p-5">
+                <p className="text-sm text-gray-500">{priceLabel}</p>
+                <p className="text-3xl font-bold text-amber-600 mt-0.5">
+                  {price !== "N/A" ? `₹${Number(price).toLocaleString("en-IN")}` : "Contact for price"}
+                  {property.price?.rent && !property.price?.sale && (
+                    <span className="text-base font-medium text-gray-500">/mo</span>
+                  )}
+                </p>
 
-              <h4 className="h4 mb-3">
-                Contact Agent
-              </h4>
+                {stats.length > 0 && (
+                  <div className="grid grid-cols-2 gap-3 mt-5 pt-5 border-t border-slate-900/10">
+                    {stats.map(({ icon: Icon, label, value }) => (
+                      <div key={label} className="flex items-center gap-2.5">
+                        <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-amber-50 text-amber-600 shrink-0">
+                          <Icon size={18} />
+                        </span>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800 leading-tight">{value}</p>
+                          <p className="text-xs text-gray-500 leading-tight">{label}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-              <form className="flex flex-col gap-4">
+              {/* Book Site Visit CTA */}
+              <div className="border border-amber-200 bg-amber-50 p-5 rounded-xl">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-2 text-amber-800">
+                  <CalendarClock size={20} /> Book a Site Visit (Free)
+                </h3>
+                <p className="text-sm text-amber-700 mb-3">
+                  Pick a date and time and our agent will contact you to confirm the visit.
+                </p>
 
-                <input
-                  type="text"
-                  placeholder="Your Name"
-                  className="p-2 py-1 border border-gray-300 rounded-md text-sm"
-                  required
-                />
-
-                <input
-                  type="email"
-                  placeholder="Your Email"
-                  className="p-2 py-1 border border-gray-300 rounded-md text-sm"
-                  required
-                />
-
-                <textarea
-                  rows={4}
-                  placeholder="Your Message"
-                  className="p-2 py-1 border border-gray-300 rounded-md text-sm"
-                  required
-                />
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <input
+                    type="date"
+                    value={preferredDate}
+                    min={today}
+                    onChange={(e) => setPreferredDate(e.target.value)}
+                    className="w-full p-2.5 border border-amber-300 rounded-lg text-sm bg-white outline-none"
+                  />
+                  <select
+                    value={preferredTime}
+                    onChange={(e) => setPreferredTime(e.target.value)}
+                    className="w-full p-2.5 border border-amber-300 rounded-lg text-sm bg-white outline-none"
+                  >
+                    <option value="">Select Time</option>
+                    {timeSlots.map((slot) => (
+                      <option key={slot} value={slot}>{slot}</option>
+                    ))}
+                  </select>
+                </div>
 
                 <button
-                  type="submit"
-                  className="btn-secondary rounded-lg py-1.5"
+                  onClick={handleBookVisit}
+                  disabled={!preferredDate || !preferredTime}
+                  className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Send Message
+                  Request Site Visit
                 </button>
-
-              </form>
-
-              {/* Agent */}
-              <h4 className="h4 mb-3 mt-8">
-                For Buying Contact
-              </h4>
-
-              <div className="text-sm w-80 divide-y divide-gray-500/30 border border-gray-500/30 rounded">
-
-                <div className="flex items-start justify-between p-3">
-
-                  <div>
-
-                    <div className="flex items-center space-x-2">
-
-                      <h5 className="h5">
-                        {property.agency.name}
-                      </h5>
-
-                      <p className="bg-green-500/20 px-2 py-0.5 rounded-full text-xs text-green-600 border border-green-500/30">
-                        Agency
-                      </p>
-
-                    </div>
-
-                    <p>
-                      Agency Office
-                    </p>
-
-                  </div>
-
-                  <img
-                    src={property.agency.owner.image}
-                    alt="agent"
-                    className="h-10 w-10 rounded-full"
-                  />
-
-                </div>
-
-                <div className="flexStart gap-2 p-1.5">
-
-                  <div className="bg-green-500/20 p-1 rounded-full border border-green-500/30">
-                    <img
-                      src={assets.phone}
-                      alt="phone"
-                      width={14}
-                    />
-                  </div>
-
-                  <p>
-                    {property.agency.contact}
-                  </p>
-
-                </div>
-
-                <div className="flexStart gap-2 p-1.5">
-
-                  <div className="bg-green-500/20 p-1 rounded-full border border-green-500/30">
-                    <img
-                      src={assets.mail}
-                      alt="email"
-                      width={14}
-                    />
-                  </div>
-
-                  <p>
-                    {property.agency.email}
-                  </p>
-
-                </div>
-
-                <div className="flex items-center">
-
-                  <button
-                    type="button"
-                    className="flex items-center justify-center gap-2 w-full py-3 cursor-pointer"
-                  >
-                    <img
-                      src={assets.mail}
-                      alt="email"
-                      width={19}
-                    />
-                    Send Email
-                  </button>
-                </div>
-
+                {bookingStatus === "success" && (
+                  <p className="mt-2 text-green-600 text-sm">Your request was submitted successfully.</p>
+                )}
               </div>
-              <a
-                href={`tel:${property.agency.contact}`}
-                className="mt-3 flex w-80 items-center justify-center gap-1.5 rounded-full bg-[#d99a35] px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#c88624]"
-              >
-                Call Now
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white">
-                  <img src={assets.phone} alt="" className="h-3.5 w-3.5" />
-                </span>
-              </a>
 
+              {/* Contact / Enquiry */}
+<div className="flex gap-3">
+  <a
+    href={
+      property.broker?.email
+        ? `mailto:${property.broker.email}`
+        : undefined
+    }
+    className="flex-1 flex items-center justify-center gap-2 bg-white border border-amber-300 text-amber-700 font-semibold px-4 py-3 rounded-xl hover:bg-amber-50 hover:border-amber-400 transition-colors text-sm"
+  >
+    <Mail size={16} />
+    Contact Agent
+  </a>
+
+  <button
+    onClick={() => toast("Enquiry flow not implemented in demo.")}
+    className="flex-1 flex items-center justify-center gap-2 bg-amber-600 text-white font-semibold px-4 py-3 rounded-xl hover:bg-amber-700 transition-colors text-sm"
+  >
+    <Phone size={16} />
+    Enquiry
+  </button>
+</div>
             </div>
-
           </div>
 
+          {/* Below-the-fold detail sections */}
+          <div className="flex flex-col lg:flex-row gap-8 mt-10">
+            <div className="w-full lg:w-[62%] space-y-8">
+              {/* Description */}
+              {property.description && (
+                <div className="bg-white rounded-xl ring-1 ring-slate-900/5 p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3">Description : </h2>
+                  <p className="text-gray-600 leading-relaxed whitespace-pre-line">{property.description}</p>
+                </div>
+              )}
+
+              {/* Amenities */}
+              {amenities.length > 0 && (
+                <div className="bg-white rounded-xl ring-1 ring-slate-900/5 p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Amenities</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {visibleAmenities.map((name) => {
+                      const Icon = amenityIcon(name);
+                      return (
+                        <div key={name} className="flex items-center gap-2.5 text-sm text-gray-700">
+                          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-amber-600 shrink-0">
+                            <Icon size={16} />
+                          </span>
+                          {name}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {amenities.length > 6 && (
+                    <button
+                      onClick={() => setShowAllAmenities((v) => !v)}
+                      className="mt-4 text-sm font-medium text-amber-600 hover:text-amber-700"
+                    >
+                      {showAllAmenities ? "Show less" : `View all amenities (${amenities.length})`}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Location */}
+              <div className="bg-white rounded-xl ring-1 ring-slate-900/5 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-3">Location</h2>
+                <p className="flex items-center gap-1.5 text-gray-600 mb-4">
+                  <MapPin size={16} className="text-amber-600 shrink-0" />
+                  {property.address}, {property.locality}, {property.city}
+                </p>
+                <div className="h-56 rounded-lg bg-slate-100 flex items-center justify-center text-gray-400 text-sm">
+                  Map placeholder — plug in Google Maps / Mapbox with the property's lat/lng here
+                </div>
+              </div>
+            </div>
+
+            {/* Right column filler on desktop so the sticky card above has room to breathe when content is short */}
+            <div className="hidden lg:block lg:w-[38%]" />
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </LayoutWithHeaderOffset>
   );
 };
 

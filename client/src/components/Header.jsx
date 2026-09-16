@@ -8,15 +8,10 @@ import { useAppContext } from "../context/AppContext";
 const Header = () => {
   const [active, setActive] = useState(false);
   const [menuOpened, setMenuOpened] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
   const location = useLocation();
   const {
     navigate,
     user,
-    isOwner,
-    setShowAgencyReg,
-    searchQuery,
-    setSearchQuery,
   } = useAppContext();
   const { openSignIn } = useClerk();
 
@@ -28,10 +23,9 @@ const Header = () => {
       viewBox="0 0 36 36"
       fill="none"
       stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      class="lucide lucide-scroll-text-icon lucide-scroll-text"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
       <path d="M15 12h-5" />
       <path d="M15 8h-5" />
@@ -42,26 +36,16 @@ const Header = () => {
 
   const toggleMenu = () => setMenuOpened((prev) => !prev);
 
-  const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value);
-
-    // Redirect to Listing page if not already there
-    if (e.target.value && location.pathname !== "/listing") {
-      navigate("listing");
-    }
-  };
-
   useEffect(() => {
     const handleScroll = () => {
       if (location.pathname === "/") {
         setActive(window.scrollY > 10);
       } else {
-        setActive(true); // always stay active on other pages
+        setActive(true);
       }
     };
 
     window.addEventListener("scroll", handleScroll);
-    // Run once to set initial active state
     handleScroll();
 
     return () => {
@@ -69,8 +53,13 @@ const Header = () => {
     };
   }, [location.pathname]);
 
+  // Close menu when route changes
+  useEffect(() => {
+    setMenuOpened(false);
+  }, [location.pathname]);
+
   return (
-    <header
+    <header style={{ '--header-height': '64px' }}
       className={`${
         active ? "bg-white py-3 shadow-md" : "py-4"
       } fixed top-0 w-full left-0 right-0 z-50 transition-all duration-200`}
@@ -97,53 +86,8 @@ const Header = () => {
             setMenuOpened={setMenuOpened}
             containerStyles={`hidden lg:flex lg:-translate-x-12 gap-x-5 xl:gap-x-1 medium-15 p-1 ${!active ? "text-white" : ""}`}
           />
-          {/* Buttons SearchBar & Profile */}
+          {/* Buttons & Profile */}
           <div className="flex sm:flex-1 items-center sm:justify-end gap-x-4 sm:gap-x-8 xl:gap-x-4">
-            <div>
-              {user && (
-                <button
-                  onClick={() =>
-                    isOwner ? navigate("/owner") : setShowAgencyReg(true)
-                  }
-                  className={`btn-outline px-2 py-1 text-xs font-semibold ${
-                    !active &&
-                    "text-primary ring-primary bg-transparent hover:text-black"
-                  } bg-secondary/10 hover:bg-white`}
-                >
-                  {isOwner ? "Dashboard" : "Register Agency"}
-                </button>
-              )}
-            </div>
-            {/* SearchBar */}
-            <div className="relative hidden xl:flex items-center">
-              {/* Search Input */}
-              <div
-                className={`${
-                  active ? "bg-secondary/10" : "bg-white"
-                } transition-all duration-300 ease-in-out ring-1 ring-slate-900/10 rounded-full overflow-hidden ${
-                  showSearch
-                    ? "w-[266px] opacity-100 px-4 py-2"
-                    : "w-11 opacity-0 px-0 py-0"
-                }`}
-              >
-                <input
-                  onChange={handleSearchChange}
-                  value={searchQuery}
-                  type="text"
-                  placeholder="Type here..."
-                  className="w-full text-sm outline-none pr-10 placeholder:text-gray-400"
-                />
-              </div>
-              {/* Search Toggle Button */}
-              <div
-                onClick={() => setShowSearch((prev) => !prev)}
-                className={`${
-                  active ? "bg-secondary/10" : "bg-primary"
-                } absolute right-0 ring-1 ring-slate-900/10 p-[8px] rounded-full cursor-pointer z-10`}
-              >
-                <img src={assets.search} alt="searchIcon" />
-              </div>
-            </div>
             {/* User Profile */}
             <div className="group relative top-1">
               <div>
@@ -209,14 +153,8 @@ const Header = () => {
             setMenuOpened={setMenuOpened}
             containerStyles="flex flex-col items-start gap-y-6 pt-20 text-lg font-bold"
             extraLinks={[
-              { path: "/contact", title: "Loan Assistance", drawerSelection: true },
-              { path: "/contact", title: "Events", drawerSelection: true },
-              { path: "/contact", title: "FAQs", drawerSelection: true },
-              {
-                path: "/contact",
-                title: "Feedbacks & Grievances",
-                drawerSelection: true,
-              },
+              { path: "/faq", title: "FAQ", drawerSelection: true },
+              { path: "/feedback", title: "Feedback", drawerSelection: true },
             ]}
           />
         </aside>

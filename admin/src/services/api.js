@@ -1,7 +1,10 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000/api';
-export const USE_MOCK = import.meta.env.VITE_ENABLE_MOCK_DATA !== 'false';
+const rawMock = import.meta.env.VITE_ENABLE_MOCK_DATA;
+export const USE_MOCK = rawMock === true || rawMock === 'true' || rawMock === '"true"';
+
+console.log(`[SAHARA CRM API] Base URL: ${API_BASE_URL} | USE_MOCK: ${USE_MOCK} (raw: ${rawMock})`);
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

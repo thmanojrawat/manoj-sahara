@@ -1,6 +1,6 @@
 import { createCrudService } from './baseService.js';
 
-const base = createCrudService('properties', '/properties');
+const base = createCrudService('properties', '/crm/properties');
 
 export const propertyService = {
   ...base,

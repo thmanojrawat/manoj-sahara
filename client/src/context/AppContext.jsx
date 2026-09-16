@@ -13,23 +13,30 @@ export const AppContextProvider = ({ children }) => {
   const navigate = useNavigate();
   const [properties, setProperties] = useState([]);
   const [searchedCities, setSearchedCities] = useState([])
-  const [showAgencyReg, setShowAgencyReg] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [propertiesLoading, setPropertiesLoading] = useState(true)
+  const [propertiesError, setPropertiesError] = useState(null)
   // CLERK
   const { user } = useUser();
   const {getToken} = useAuth()
 
   const getProperties = async () => {
     try {
-      const {data} = await axios.get('/api/properties')
-      if(data.success){
-        setProperties(data.properties)
-      }else{
-        toast.error(data.message)
+      setPropertiesLoading(true)
+      setPropertiesError(null)
+      const { data } = await axios.get('/api/crm/listings/public');
+      if (data.success && Array.isArray(data.data)) {
+        setProperties(data.data);
+      } else {
+        setProperties([]);
       }
     } catch (error) {
-      toast.error(error.message)
+      console.error("Error fetching properties:", error.message);
+      setPropertiesError("Unable to load properties. Please try again.")
+      setProperties([]);
+    } finally {
+      setPropertiesLoading(false)
     }
   };
 
@@ -38,16 +45,15 @@ export const AppContextProvider = ({ children }) => {
       const {data} = await axios.get('/api/user', {headers: {Authorization: `Bearer ${await getToken()}`}})
       if(data.success){
         setIsOwner(data.role === "agencyOwner")
-        setSearchedCities(data.recentSearchedCities)
+        setSearchedCities(data.recentSearchedCities || [])
       }else{
-        // Retry fetch user details after 5 seconds
         setTimeout(() => {
           getUser()
         }, 5000);
       }
 
     } catch (error) {
-      toast.error(error.message)
+      console.error("getUser error:", error.message)
     }
   }
 
@@ -65,10 +71,10 @@ export const AppContextProvider = ({ children }) => {
     navigate,
     properties,
     setProperties,
+    propertiesLoading,
+    propertiesError,
     currency,
     user,
-    showAgencyReg,
-    setShowAgencyReg,
     isOwner,
     setIsOwner,
     axios,
@@ -82,4 +88,4 @@ export const AppContextProvider = ({ children }) => {
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
-export const useAppContext = () => useContext(AppContext);
+export const useAppContext = () => useContext(AppContext);

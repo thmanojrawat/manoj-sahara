@@ -69,6 +69,12 @@ const vendorSchema = new mongoose.Schema(
       ref: "AdminUser",
       default: null,
     },
+
+    // Soft deletion flag for CRM trash/archive safety
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

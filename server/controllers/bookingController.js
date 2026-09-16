@@ -1,6 +1,7 @@
 import Booking from "../models/Booking.js";
 import Property from "../models/Property.js";
 import Agency from "../models/Agency.js";
+import CrmBooking from "../models/CrmBooking.js";
 import transporter from "../config/nodemailer.js";
 import Stripe from "stripe";
 
@@ -405,21 +406,80 @@ export const bookingCreate = async (req, res) => {
 // --------------------------------------------------
 export const getUserBookings = async (req, res) => {
   try {
-    const user = req.user._id;
+    const authData = typeof req.auth === "function" ? req.auth() : req.auth;
+    const userId = req.user?._id || authData?.userId;
+    const userEmail = req.user?.email;
 
-    const bookings = await Booking.find({ user })
-      .populate("property agency")
-      .sort({ createdAt: -1 });
+    const queryConditions = [];
+    if (userId) {
+      queryConditions.push({ userId });
+    }
+    if (userEmail) {
+      queryConditions.push({ clientEmail: userEmail.toLowerCase() });
+    }
+
+    let crmBookings = [];
+    if (queryConditions.length > 0) {
+      crmBookings = await CrmBooking.find({
+        isDeleted: { $ne: true },
+        $or: queryConditions,
+      })
+        .populate("property", "title propertyType price locality city images address")
+        .populate("listing", "title slug listedPrice publicImages")
+        .populate("broker", "name phone email companyName")
+        .sort({ createdAt: -1 })
+        .lean();
+    }
+
+    // Format for customer client
+    const formattedCrmBookings = crmBookings.map((b) => {
+      let images = [];
+      if (Array.isArray(b.listing?.publicImages) && b.listing.publicImages.length > 0) {
+        images = b.listing.publicImages.map((img) => (typeof img === "string" ? img : img?.url || ""));
+      } else if (Array.isArray(b.property?.images) && b.property.images.length > 0) {
+        images = b.property.images.map((img) => (typeof img === "string" ? img : img?.url || ""));
+      } else {
+        images = ["https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80"];
+      }
+
+      const propTitle = b.propertyName || b.listing?.title || b.property?.title || "Sahara Residence";
+      const propLocality = b.property?.locality || "Kolkata";
+      const propCity = b.property?.city || "Kolkata";
+      const propAddress = b.property?.address || `${propLocality}, ${propCity}`;
+
+      return {
+        _id: b._id.toString(),
+        id: b._id.toString(),
+        bookingNumber: b.bookingNumber || `BOK-2026-${b._id.toString().slice(-4).toUpperCase()}`,
+        bookingType: b.bookingType || "site_visit",
+        property: {
+          _id: b.property?._id?.toString() || b.property?.toString() || "",
+          title: propTitle,
+          address: propAddress,
+          locality: propLocality,
+          city: propCity,
+          images,
+        },
+        clientName: b.clientName,
+        clientEmail: b.clientEmail,
+        clientPhone: b.clientPhone,
+        bookingDate: b.bookingDate,
+        preferredVisitTime: b.preferredVisitTime || "11:00 AM",
+        status: b.status || "pending",
+        paymentStatus: b.paymentStatus || "Pending",
+        amount: b.amount || 0,
+        notes: b.notes,
+        createdAt: b.createdAt,
+      };
+    });
 
     res.json({
       success: true,
-      bookings,
+      bookings: formattedCrmBookings,
     });
-
   } catch (error) {
-    console.log("Get User Bookings Error:", error.message);
-
-    res.json({
+    console.error("Get User Bookings Error:", error.message);
+    res.status(500).json({
       success: false,
       message: "Failed to get Bookings",
     });
